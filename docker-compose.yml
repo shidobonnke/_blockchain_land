@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_USER: anagu
+      POSTGRES_PASSWORD: anagu
+      POSTGRES_DB: anagu
+    ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anagu"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: redis-server --appendonly yes
+    volumes: [redis_data:/data]
+
+  mqtt:
+    image: emqx/emqx:5
+    ports: ["1883:1883", "18083:18083"]
+    environment:
+      EMQX_ALLOW_ANONYMOUS: "false"
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: change-before-production
+    volumes: [mqtt_data:/opt/emqx/data]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: anagu
+      MINIO_ROOT_PASSWORD: change-this-password
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [minio_data:/data]
+
+  besu:
+    image: hyperledger/besu:latest
+    command:
+      - --network=dev
+      - --rpc-http-enabled=true
+      - --rpc-http-api=ETH,NET,WEB3
+      - --rpc-http-host=0.0.0.0
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --data-path=/var/lib/besu
+    ports: ["8545:8545"]
+    volumes: [besu_data:/var/lib/besu]
+
+volumes:
+  postgres_data:
+  redis_data:
+  mqtt_data:
+  minio_data:
+  besu_data:

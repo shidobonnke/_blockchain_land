@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "Anagu Field",
+    "slug": "anagu-field",
+    "scheme": "anagu",
+    "plugins": ["expo-router", "expo-secure-store", "expo-sqlite"],
+    "ios": { "bundleIdentifier": "ng.anagu.field", "supportsTablet": true },
+    "android": { "package": "ng.anagu.field" }
+  }
+}

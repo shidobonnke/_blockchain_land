@@ -1,0 +1,19 @@
+{
+  "name": "anagu-land-registry",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "npm@11.3.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build": "npm run build -w @anagu/shared && npm run build -w @anagu/contracts && npm run build -w @anagu/api && npm run build -w @anagu/web",
+    "test": "npm run test -w @anagu/contracts && npm run test -w @anagu/api",
+    "dev:api": "npm run start:dev -w @anagu/api",
+    "dev:web": "npm run dev -w @anagu/web",
+    "dev:mobile": "npm run start -w @anagu/mobile",
+    "db:generate": "npm run prisma:generate -w @anagu/api",
+    "db:migrate": "npm run prisma:migrate -w @anagu/api",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down"
+  },
+  "engines": { "node": ">=20" }
+}

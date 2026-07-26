@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CITIZEN
+  SURVEYOR
+  COMMUNITY_REPRESENTATIVE
+  LAND_ADMINISTRATOR
+  LEGAL_OFFICER
+  REGISTRAR
+  GOVERNOR
+  JUDICIARY
+  AUDITOR
+  SYSTEM_ADMIN
+}
+
+enum TenureType {
+  STATUTORY
+  CUSTOMARY
+}
+
+enum ParcelStatus {
+  UNREGISTERED
+  PENDING
+  SPATIALLY_VERIFIED
+  COMMUNITY_VALIDATED
+  APPROVED
+  ACTIVE
+  REJECTED
+  DISPUTED
+  SUSPENDED
+  TRANSFERRED
+  REVOKED
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  SPATIAL_REVIEW
+  COMMUNITY_REVIEW
+  LEGAL_REVIEW
+  REGISTRAR_REVIEW
+  BLOCKCHAIN_PENDING
+  MINTED
+  REJECTED
+  CANCELLED
+}
+
+enum Decision {
+  APPROVE
+  REJECT
+  ABSTAIN
+}
+
+model User {
+  id              String             @id @default(uuid())
+  email           String             @unique
+  passwordHash    String
+  fullName        String
+  phone           String?
+  role            Role               @default(CITIZEN)
+  walletAddress   String?
+  isActive        Boolean            @default(true)
+  applications    LandApplication[]  @relation("Applicant")
+  attestations    Attestation[]
+  auditLogs       AuditLog[]         @relation("AuditActor")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model LandParcel {
+  id              String             @id @default(uuid())
+  parcelCode      String             @unique
+  state           String
+  lga             String
+  address         String
+  tenureType      TenureType
+  status          ParcelStatus       @default(UNREGISTERED)
+  geometry        Unsupported("geometry(Polygon, 4326)")
+  geometryHash    String?
+  areaSqM         Decimal?
+  applications    LandApplication[]
+  title           LandTitle?
+  disputes        Dispute[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([status])
+}
+
+model LandApplication {
+  id               String             @id @default(uuid())
+  parcelId         String
+  parcel           LandParcel         @relation(fields: [parcelId], references: [id])
+  applicantId      String
+  applicant        User               @relation("Applicant", fields: [applicantId], references: [id])
+  claimDescription String
+  status           ApplicationStatus  @default(DRAFT)
+  version          Int                @default(1)
+  submittedAt      DateTime?
+  attestations     Attestation[]
+  transitions      WorkflowTransition[]
+  documents        Document[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([status])
+  @@index([applicantId])
+}
+
+model WorkflowTransition {
+  id             String             @id @default(uuid())
+  applicationId  String
+  application    LandApplication    @relation(fields: [applicationId], references: [id])
+  fromStatus     ApplicationStatus
+  toStatus       ApplicationStatus
+  actorId        String
+  reason         String
+  createdAt      DateTime           @default(now())
+}
+
+model Attestation {
+  id             String           @id @default(uuid())
+  applicationId  String
+  application    LandApplication  @relation(fields: [applicationId], references: [id])
+  representativeId String
+  representative User             @relation(fields: [representativeId], references: [id])
+  decision       Decision
+  evidenceHash   String?
+  signature      String?
+  createdAt      DateTime         @default(now())
+
+  @@unique([applicationId, representativeId])
+}
+
+model LandTitle {
+  id               String       @id @default(uuid())
+  parcelId         String       @unique
+  parcel           LandParcel   @relation(fields: [parcelId], references: [id])
+  tokenId          String       @unique
+  ownerWallet      String
+  contractAddress  String
+  transactionHash  String       @unique
+  blockNumber      BigInt?
+  metadataHash     String
+  issuedAt         DateTime     @default(now())
+}
+
+model Dispute {
+  id          String       @id @default(uuid())
+  parcelId    String
+  parcel      LandParcel   @relation(fields: [parcelId], references: [id])
+  raisedById  String
+  summary     String
+  status      String       @default("OPEN")
+  resolution  String?
+  createdAt   DateTime     @default(now())
+  resolvedAt  DateTime?
+}
+
+model Document {
+  id             String            @id @default(uuid())
+  applicationId  String
+  application    LandApplication   @relation(fields: [applicationId], references: [id])
+  category       String
+  storageKey     String            @unique
+  contentHash    String
+  mimeType       String
+  createdAt      DateTime          @default(now())
+}
+
+model SyncOperation {
+  id             String    @id
+  deviceId       String
+  userId         String
+  operation      String
+  payload        Json
+  result         Json?
+  processedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([deviceId, createdAt])
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  actorId     String?
+  actor       User?     @relation("AuditActor", fields: [actorId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+.expo
+.env
+coverage
+artifacts
+cache
+typechain-types
+*.log
+.DS_Store
+~$*.docx
