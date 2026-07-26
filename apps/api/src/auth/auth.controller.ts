@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 import { AuthService } from "./auth.service";
+import { Public } from "./public.decorator";
 
 class RegisterDto {
   @IsEmail() email!: string;
@@ -14,8 +15,13 @@ class LoginDto {
 }
 
 @Controller("auth")
+@Public()
 export class AuthController {
   constructor(private auth: AuthService) {}
-  @Post("register") register(@Body() body: RegisterDto) { return this.auth.register(body); }
-  @Post("login") login(@Body() body: LoginDto) { return this.auth.login(body); }
+  @Post("register") register(@Body() body: RegisterDto) {
+    return this.auth.register(body);
+  }
+  @Post("login") login(@Body() body: LoginDto) {
+    return this.auth.login(body);
+  }
 }

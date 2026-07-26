@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { IsObject, IsString, IsUUID } from "class-validator";
 import { SyncService } from "./sync.service";
+import { AuthenticatedUser, CurrentUser } from "../auth/current-user.decorator";
 class SyncDto {
   @IsUUID() id!: string;
   @IsString() deviceId!: string;
@@ -11,5 +12,8 @@ class SyncDto {
 @Controller("sync")
 export class SyncController {
   constructor(private sync: SyncService) {}
-  @Post("operations") accept(@Body() body: SyncDto) { return this.sync.accept(body); }
+  @Post("operations")
+  accept(@CurrentUser() user: AuthenticatedUser, @Body() body: SyncDto) {
+    return this.sync.accept({ ...body, userId: user.sub });
+  }
 }

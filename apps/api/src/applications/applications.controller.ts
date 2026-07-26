@@ -4,6 +4,9 @@ import { submitApplicationSchema, SubmitApplicationInput, transitionSchema } fro
 import { IsIn, IsOptional, IsString, IsUUID } from "class-validator";
 import { ZodValidationPipe } from "../common/zod-validation.pipe";
 import { ApplicationsService } from "./applications.service";
+import { CurrentUser, AuthenticatedUser } from "../auth/current-user.decorator";
+import { Roles } from "../auth/roles.decorator";
+import { Role } from "@prisma/client";
 
 class AttestationDto {
   @IsUUID() representativeId!: string;
@@ -15,14 +18,30 @@ class AttestationDto {
 @Controller("applications")
 export class ApplicationsController {
   constructor(private applications: ApplicationsService) {}
-  @Get() list() { return this.applications.list(); }
-  @Post() create(@Body(new ZodValidationPipe(submitApplicationSchema)) body: SubmitApplicationInput) {
+  @Get() list() {
+    return this.applications.list();
+  }
+  @Post() create(
+    @Body(new ZodValidationPipe(submitApplicationSchema)) body: SubmitApplicationInput
+  ) {
     return this.applications.create(body);
   }
   @Post(":id/transition")
-  transition(@Param("id") id: string, @Body(new ZodValidationPipe(transitionSchema)) body: { to: ApplicationStatus; reason: string; actorId: string }) {
-    return this.applications.transition(id, body);
+  transition(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body(new ZodValidationPipe(transitionSchema))
+    body: { to: ApplicationStatus; reason: string; actorId: string }
+  ) {
+    return this.applications.transition(id, { ...body, actorId: user.sub });
   }
   @Post(":id/attest")
-  attest(@Param("id") id: string, @Body() body: AttestationDto) { return this.applications.attest(id, body); }
+  @Roles(Role.COMMUNITY_REPRESENTATIVE)
+  attest(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: AttestationDto
+  ) {
+    return this.applications.attest(id, { ...body, representativeId: user.sub });
+  }
 }

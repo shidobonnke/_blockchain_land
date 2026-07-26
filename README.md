@@ -77,24 +77,24 @@ or blockchain nodes. All validation and state changes pass through the NestJS AP
 
 ## Technology stack
 
-| Layer | Technology |
-|---|---|
-| Administrative web application | Next.js, React, TypeScript |
-| Field mobile application | React Native, Expo, TypeScript |
-| Shared backend | NestJS, TypeScript |
-| ORM | Prisma |
-| Operational database | PostgreSQL |
-| Spatial database | PostGIS |
-| Mobile offline database | SQLite |
-| Blockchain | Hyperledger Besu |
-| Ledger consensus for production | QBFT |
-| Smart contracts | Solidity |
-| Token standard | Restricted ERC-721 |
-| Contract libraries and tests | OpenZeppelin, Hardhat, ethers.js |
-| Messaging | MQTT/EMQX |
-| Cache and job infrastructure | Redis |
-| Document storage | MinIO/S3-compatible object storage |
-| Local orchestration | Docker Compose |
+| Layer                           | Technology                         |
+| ------------------------------- | ---------------------------------- |
+| Administrative web application  | Next.js, React, TypeScript         |
+| Field mobile application        | React Native, Expo, TypeScript     |
+| Shared backend                  | NestJS, TypeScript                 |
+| ORM                             | Prisma                             |
+| Operational database            | PostgreSQL                         |
+| Spatial database                | PostGIS                            |
+| Mobile offline database         | SQLite                             |
+| Blockchain                      | Hyperledger Besu                   |
+| Ledger consensus for production | QBFT                               |
+| Smart contracts                 | Solidity                           |
+| Token standard                  | Restricted ERC-721                 |
+| Contract libraries and tests    | OpenZeppelin, Hardhat, ethers.js   |
+| Messaging                       | MQTT/EMQX                          |
+| Cache and job infrastructure    | Redis                              |
+| Document storage                | MinIO/S3-compatible object storage |
+| Local orchestration             | Docker Compose                     |
 
 QBFT is the base-ledger consensus mechanism. The community DPoS concept described
 in the study is implemented as representative voting and attestation logic, not as
@@ -204,22 +204,22 @@ DATABASE_URL=postgresql://apple@localhost:5432/anagu?schema=public
 
 Main variables:
 
-| Variable | Description | Development value |
-|---|---|---|
-| `PORT` | NestJS API port | `4000` |
-| `DATABASE_URL` | Prisma PostgreSQL connection | `postgresql://apple@localhost:5432/anagu?schema=public` |
-| `JWT_SECRET` | JWT signing secret | Replace before shared deployment |
-| `WEB_ORIGIN` | Allowed browser origin | `http://localhost:3000` |
-| `RPC_URL` | Besu JSON-RPC endpoint | `http://localhost:8545` |
-| `LAND_REGISTRY_ADDRESS` | Deployed registry contract | Set after deployment |
-| `TITLE_NFT_ADDRESS` | Deployed title contract | Set after deployment |
-| `BLOCKCHAIN_SIGNER_PRIVATE_KEY` | Backend signer | Never commit this value |
-| `MQTT_URL` | MQTT broker connection | `mqtt://localhost:1883` |
-| `REDIS_URL` | Redis connection | `redis://localhost:6379` |
-| `S3_ENDPOINT` | MinIO/S3 API | `http://localhost:9000` |
-| `S3_ACCESS_KEY` | Object-storage access key | Development only |
-| `S3_SECRET_KEY` | Object-storage secret | Replace before deployment |
-| `S3_BUCKET` | Evidence bucket | `land-documents` |
+| Variable                        | Description                  | Development value                                       |
+| ------------------------------- | ---------------------------- | ------------------------------------------------------- |
+| `PORT`                          | NestJS API port              | `4000`                                                  |
+| `DATABASE_URL`                  | Prisma PostgreSQL connection | `postgresql://apple@localhost:5432/anagu?schema=public` |
+| `JWT_SECRET`                    | JWT signing secret           | Replace before shared deployment                        |
+| `WEB_ORIGIN`                    | Allowed browser origin       | `http://localhost:3000`                                 |
+| `RPC_URL`                       | Besu JSON-RPC endpoint       | `http://localhost:8545`                                 |
+| `LAND_REGISTRY_ADDRESS`         | Deployed registry contract   | Set after deployment                                    |
+| `TITLE_NFT_ADDRESS`             | Deployed title contract      | Set after deployment                                    |
+| `BLOCKCHAIN_SIGNER_PRIVATE_KEY` | Backend signer               | Never commit this value                                 |
+| `MQTT_URL`                      | MQTT broker connection       | `mqtt://localhost:1883`                                 |
+| `REDIS_URL`                     | Redis connection             | `redis://localhost:6379`                                |
+| `S3_ENDPOINT`                   | MinIO/S3 API                 | `http://localhost:9000`                                 |
+| `S3_ACCESS_KEY`                 | Object-storage access key    | Development only                                        |
+| `S3_SECRET_KEY`                 | Object-storage secret        | Replace before deployment                               |
+| `S3_BUCKET`                     | Evidence bucket              | `land-documents`                                        |
 
 The mobile application can use:
 
@@ -399,18 +399,18 @@ http://localhost:4000/docs
 
 Main endpoint groups:
 
-| Route | Purpose |
-|---|---|
-| `/api/v1/health` | Service health |
-| `/api/v1/auth/register` | Citizen registration |
-| `/api/v1/auth/login` | Authentication and JWT issuance |
-| `/api/v1/parcels` | Parcel creation and listing |
-| `/api/v1/parcels/:id` | Parcel details |
-| `/api/v1/parcels/:id/validate-spatial` | PostGIS spatial validation |
-| `/api/v1/applications` | Application creation and listing |
-| `/api/v1/applications/:id/transition` | Controlled workflow transition |
-| `/api/v1/applications/:id/attest` | Community attestation |
-| `/api/v1/sync/operations` | Idempotent offline operation intake |
+| Route                                  | Purpose                             |
+| -------------------------------------- | ----------------------------------- |
+| `/api/v1/health`                       | Service health                      |
+| `/api/v1/auth/register`                | Citizen registration                |
+| `/api/v1/auth/login`                   | Authentication and JWT issuance     |
+| `/api/v1/parcels`                      | Parcel creation and listing         |
+| `/api/v1/parcels/:id`                  | Parcel details                      |
+| `/api/v1/parcels/:id/validate-spatial` | PostGIS spatial validation          |
+| `/api/v1/applications`                 | Application creation and listing    |
+| `/api/v1/applications/:id/transition`  | Controlled workflow transition      |
+| `/api/v1/applications/:id/attest`      | Community attestation               |
+| `/api/v1/sync/operations`              | Idempotent offline operation intake |
 
 GeoJSON parcel creation uses WGS 84 (`EPSG:4326`) polygon coordinates:
 
@@ -425,11 +425,11 @@ GeoJSON parcel creation uses WGS 84 (`EPSG:4326`) polygon coordinates:
     "type": "Polygon",
     "coordinates": [
       [
-        [3.3500, 6.6000],
-        [3.3510, 6.6000],
-        [3.3510, 6.6010],
-        [3.3500, 6.6010],
-        [3.3500, 6.6000]
+        [3.35, 6.6],
+        [3.351, 6.6],
+        [3.351, 6.601],
+        [3.35, 6.601],
+        [3.35, 6.6]
       ]
     ]
   }
@@ -600,3 +600,7 @@ A national or state deployment requires work beyond application source code:
 
 See [production deployment requirements](docs/production.md) for the condensed
 deployment checklist.
+
+The complete mapping from Chapters 1 and 3 to source code, tests, runtime checks,
+and external research activities is maintained in
+[the requirements traceability matrix](docs/chapter-1-3-traceability.md).

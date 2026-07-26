@@ -70,6 +70,9 @@ model User {
   applications    LandApplication[]  @relation("Applicant")
   attestations    Attestation[]
   auditLogs       AuditLog[]         @relation("AuditActor")
+  transferRequests TransferRequest[] @relation("TransferRequester")
+  disputesRaised  Dispute[]          @relation("DisputeRaiser")
+  revocationVotes RevocationVote[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 }
@@ -88,6 +91,8 @@ model LandParcel {
   applications    LandApplication[]
   title           LandTitle?
   disputes        Dispute[]
+  transfers       TransferRequest[]
+  revocations     RevocationRequest[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -157,11 +162,91 @@ model Dispute {
   parcelId    String
   parcel      LandParcel   @relation(fields: [parcelId], references: [id])
   raisedById  String
+  raisedBy    User         @relation("DisputeRaiser", fields: [raisedById], references: [id])
   summary     String
   status      String       @default("OPEN")
   resolution  String?
   createdAt   DateTime     @default(now())
   resolvedAt  DateTime?
+}
+
+model TransferRequest {
+  id              String       @id @default(uuid())
+  parcelId        String
+  parcel          LandParcel   @relation(fields: [parcelId], references: [id])
+  requestedById   String
+  requestedBy     User         @relation("TransferRequester", fields: [requestedById], references: [id])
+  newOwnerId      String
+  newOwnerWallet  String
+  status          String       @default("PENDING")
+  legalApprovedAt DateTime?
+  registrarApprovedAt DateTime?
+  transactionHash String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([parcelId, status])
+}
+
+model RevocationRequest {
+  id                String       @id @default(uuid())
+  parcelId          String
+  parcel            LandParcel   @relation(fields: [parcelId], references: [id])
+  requestedById     String
+  publicInterestReason String
+  reasonHash        String
+  status            String       @default("PENDING_VALIDATOR_VOTE")
+  validatorApprovals Int         @default(0)
+  validatorCount    Int          @default(0)
+  judiciaryApprovedAt DateTime?
+  transactionHash   String?
+  votes             RevocationVote[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([parcelId, status])
+}
+
+model RevocationVote {
+  id          String            @id @default(uuid())
+  requestId   String
+  request     RevocationRequest @relation(fields: [requestId], references: [id])
+  validatorId String
+  validator   User              @relation(fields: [validatorId], references: [id])
+  approve     Boolean
+  createdAt   DateTime          @default(now())
+
+  @@unique([requestId, validatorId])
+}
+
+model BlockchainTransaction {
+  id              String    @id @default(uuid())
+  entityType      String
+  entityId        String
+  operation       String
+  transactionHash String?   @unique
+  blockNumber     BigInt?
+  status          String    @default("QUEUED")
+  error           String?
+  submittedAt     DateTime?
+  confirmedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([status])
+}
+
+model EvaluationMetric {
+  id          String   @id @default(uuid())
+  category    String
+  metric      String
+  value       Float
+  unit        String
+  context     Json?
+  recordedAt  DateTime @default(now())
+
+  @@index([metric, recordedAt])
 }
 
 model Document {

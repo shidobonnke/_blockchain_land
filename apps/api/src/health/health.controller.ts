@@ -1,7 +1,11 @@
 import { Controller, Get } from "@nestjs/common";
+import { Public } from "../auth/public.decorator";
 
 @Controller("health")
+@Public()
 export class HealthController {
   @Get()
-  check() { return { status: "ok", service: "anagu-api", timestamp: new Date().toISOString() }; }
+  check() {
+    return { status: "ok", service: "anagu-api", timestamp: new Date().toISOString() };
+  }
 }

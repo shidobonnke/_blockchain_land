@@ -1,22 +1,47 @@
 import { z } from "zod";
 
 export const roles = [
-  "CITIZEN", "SURVEYOR", "COMMUNITY_REPRESENTATIVE", "LAND_ADMINISTRATOR",
-  "LEGAL_OFFICER", "REGISTRAR", "GOVERNOR", "JUDICIARY", "AUDITOR", "SYSTEM_ADMIN"
+  "CITIZEN",
+  "SURVEYOR",
+  "COMMUNITY_REPRESENTATIVE",
+  "LAND_ADMINISTRATOR",
+  "LEGAL_OFFICER",
+  "REGISTRAR",
+  "GOVERNOR",
+  "JUDICIARY",
+  "AUDITOR",
+  "SYSTEM_ADMIN"
 ] as const;
-export type Role = typeof roles[number];
+export type Role = (typeof roles)[number];
 
 export const parcelStatuses = [
-  "UNREGISTERED", "PENDING", "SPATIALLY_VERIFIED", "COMMUNITY_VALIDATED",
-  "APPROVED", "ACTIVE", "REJECTED", "DISPUTED", "SUSPENDED", "TRANSFERRED", "REVOKED"
+  "UNREGISTERED",
+  "PENDING",
+  "SPATIALLY_VERIFIED",
+  "COMMUNITY_VALIDATED",
+  "APPROVED",
+  "ACTIVE",
+  "REJECTED",
+  "DISPUTED",
+  "SUSPENDED",
+  "TRANSFERRED",
+  "REVOKED"
 ] as const;
-export type ParcelStatus = typeof parcelStatuses[number];
+export type ParcelStatus = (typeof parcelStatuses)[number];
 
 export const applicationStatuses = [
-  "DRAFT", "SUBMITTED", "SPATIAL_REVIEW", "COMMUNITY_REVIEW", "LEGAL_REVIEW",
-  "REGISTRAR_REVIEW", "BLOCKCHAIN_PENDING", "MINTED", "REJECTED", "CANCELLED"
+  "DRAFT",
+  "SUBMITTED",
+  "SPATIAL_REVIEW",
+  "COMMUNITY_REVIEW",
+  "LEGAL_REVIEW",
+  "REGISTRAR_REVIEW",
+  "BLOCKCHAIN_PENDING",
+  "MINTED",
+  "REJECTED",
+  "CANCELLED"
 ] as const;
-export type ApplicationStatus = typeof applicationStatuses[number];
+export type ApplicationStatus = (typeof applicationStatuses)[number];
 
 export const polygonSchema = z.object({
   type: z.literal("Polygon"),

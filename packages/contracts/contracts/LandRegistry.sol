@@ -10,6 +10,7 @@ contract LandRegistry is AccessControl, Pausable {
     bytes32 public constant LEGAL_ROLE = keccak256("LEGAL_ROLE");
     bytes32 public constant JUDICIARY_ROLE = keccak256("JUDICIARY_ROLE");
     bytes32 public constant GOVERNOR_ROLE = keccak256("GOVERNOR_ROLE");
+    bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
 
     enum TitleStatus { None, Active, Suspended, Disputed, Transferred, RevocationPending, Revoked }
     struct Title {
@@ -30,12 +31,16 @@ contract LandRegistry is AccessControl, Pausable {
     mapping(bytes32 => Title) public titles;
     mapping(uint256 => bytes32) public parcelByToken;
     mapping(bytes32 => Revocation) public revocations;
+    mapping(bytes32 => mapping(address => bool)) public revocationVoted;
+    mapping(bytes32 => uint256) public revocationApprovals;
+    uint256 public validatorCount;
     uint256 public nextTokenId = 1;
 
     event TitleIssued(bytes32 indexed parcelId, uint256 indexed tokenId, address indexed owner);
     event TitleTransferred(bytes32 indexed parcelId, address indexed from, address indexed to);
     event DisputeStatusChanged(bytes32 indexed parcelId, bool disputed, bytes32 evidenceHash);
     event RevocationRequested(bytes32 indexed parcelId, bytes32 reasonHash);
+    event RevocationValidatorApproved(bytes32 indexed parcelId, address validator, uint256 approvals);
     event RevocationJudiciallyApproved(bytes32 indexed parcelId, address judiciary);
     event TitleRevoked(bytes32 indexed parcelId);
 
@@ -43,6 +48,18 @@ contract LandRegistry is AccessControl, Pausable {
         titleToken = token;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(REGISTRAR_ROLE, admin);
+    }
+
+    function addValidator(address validator) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(!hasRole(VALIDATOR_ROLE, validator), "Validator already registered");
+        _grantRole(VALIDATOR_ROLE, validator);
+        validatorCount++;
+    }
+
+    function removeValidator(address validator) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(hasRole(VALIDATOR_ROLE, validator), "Validator not registered");
+        _revokeRole(VALIDATOR_ROLE, validator);
+        validatorCount--;
     }
 
     function issueTitle(
@@ -95,8 +112,18 @@ contract LandRegistry is AccessControl, Pausable {
     function approveRevocation(bytes32 parcelId) external onlyRole(JUDICIARY_ROLE) {
         Revocation storage request = revocations[parcelId];
         require(request.governorApproved, "No governor request");
+        require(validatorCount >= 4, "Insufficient validator set");
+        require(revocationApprovals[parcelId] * 100 > validatorCount * 75, "Super-majority incomplete");
         request.judiciaryApproved = true;
         emit RevocationJudiciallyApproved(parcelId, msg.sender);
+    }
+
+    function voteRevocation(bytes32 parcelId) external onlyRole(VALIDATOR_ROLE) {
+        require(revocations[parcelId].governorApproved, "No governor request");
+        require(!revocationVoted[parcelId][msg.sender], "Validator already voted");
+        revocationVoted[parcelId][msg.sender] = true;
+        revocationApprovals[parcelId]++;
+        emit RevocationValidatorApproved(parcelId, msg.sender, revocationApprovals[parcelId]);
     }
 
     function executeRevocation(bytes32 parcelId) external onlyRole(REGISTRAR_ROLE) {

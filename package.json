@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "npm@11.3.0",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "build": "npm run build -w @anagu/shared && npm run build -w @anagu/contracts && npm run build -w @anagu/api && npm run build -w @anagu/web",
     "test": "npm run test -w @anagu/contracts && npm run test -w @anagu/api",
@@ -13,7 +16,12 @@
     "db:generate": "npm run prisma:generate -w @anagu/api",
     "db:migrate": "npm run prisma:migrate -w @anagu/api",
     "infra:up": "docker compose up -d",
-    "infra:down": "docker compose down"
+    "infra:down": "docker compose down",
+    "evaluate": "node scripts/evaluate.mjs",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,js,json}\" \"packages/**/*.{ts,tsx,js,json}\" \"scripts/**/*.{js,mjs}\" \"*.{json,md,yml}\" \"docs/**/*.md\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,json}\" \"packages/**/*.{ts,tsx,js,json}\" \"scripts/**/*.{js,mjs}\" \"*.{json,md,yml}\" \"docs/**/*.md\""
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

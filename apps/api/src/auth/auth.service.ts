@@ -9,7 +9,9 @@ export class AuthService {
   constructor(private prisma: PrismaService, private jwt: JwtService) {}
 
   async register(input: { email: string; password: string; fullName: string; phone?: string }) {
-    const existing = await this.prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: input.email.toLowerCase() }
+    });
     if (existing) throw new ConflictException("Email already registered");
     const user = await this.prisma.user.create({
       data: {

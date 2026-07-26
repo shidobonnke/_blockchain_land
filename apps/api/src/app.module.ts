@@ -6,6 +6,12 @@ import { HealthController } from "./health/health.controller";
 import { ParcelsModule } from "./parcels/parcels.module";
 import { ApplicationsModule } from "./applications/applications.module";
 import { SyncModule } from "./sync/sync.module";
+import { APP_GUARD } from "@nestjs/core";
+import { JwtAuthGuard } from "./auth/jwt-auth.guard";
+import { RolesGuard } from "./auth/roles.guard";
+import { GovernanceModule } from "./governance/governance.module";
+import { EvaluationModule } from "./evaluation/evaluation.module";
+import { DocumentsModule } from "./documents/documents.module";
 
 @Module({
   imports: [
@@ -14,8 +20,15 @@ import { SyncModule } from "./sync/sync.module";
     AuthModule,
     ParcelsModule,
     ApplicationsModule,
-    SyncModule
+    SyncModule,
+    GovernanceModule,
+    EvaluationModule,
+    DocumentsModule
   ],
-  controllers: [HealthController]
+  controllers: [HealthController],
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard }
+  ]
 })
 export class AppModule {}
