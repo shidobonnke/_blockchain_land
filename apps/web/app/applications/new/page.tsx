@@ -39,7 +39,6 @@ export default function NewApplicationPage() {
           method: "POST",
           body: JSON.stringify({
             parcelId,
-            applicantId: session.user.id,
             claimDescription: description
           })
         },

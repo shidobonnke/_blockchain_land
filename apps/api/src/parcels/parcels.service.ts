@@ -15,6 +15,10 @@ export class ParcelsService {
         geometry,
         ST_SetSRID(ST_GeomFromGeoJSON(${geometryJson}), 4326)
       )
+      AND NOT ST_Touches(
+        geometry,
+        ST_SetSRID(ST_GeomFromGeoJSON(${geometryJson}), 4326)
+      )
       LIMIT 10`;
     if (overlaps.length) {
       await this.prisma.evaluationMetric.create({
@@ -79,7 +83,8 @@ export class ParcelsService {
     >`
       SELECT ST_IsValid(p.geometry) AS valid, ST_IsValidReason(p.geometry) AS reason,
         (SELECT COUNT(*) FROM "LandParcel" o
-         WHERE o.id <> p.id AND ST_Intersects(o.geometry, p.geometry)) AS overlaps
+         WHERE o.id <> p.id AND ST_Intersects(o.geometry, p.geometry)
+           AND NOT ST_Touches(o.geometry, p.geometry)) AS overlaps
       FROM "LandParcel" p WHERE p.id = ${id}::uuid`;
     if (!rows.length) throw new NotFoundException("Parcel not found");
     return {

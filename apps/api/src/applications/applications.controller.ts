@@ -22,16 +22,17 @@ export class ApplicationsController {
     return this.applications.list();
   }
   @Post() create(
+    @CurrentUser() user: AuthenticatedUser,
     @Body(new ZodValidationPipe(submitApplicationSchema)) body: SubmitApplicationInput
   ) {
-    return this.applications.create(body);
+    return this.applications.create({ ...body, applicantId: user.sub });
   }
   @Post(":id/transition")
   transition(
     @Param("id") id: string,
     @CurrentUser() user: AuthenticatedUser,
     @Body(new ZodValidationPipe(transitionSchema))
-    body: { to: ApplicationStatus; reason: string; actorId: string }
+    body: { to: ApplicationStatus; reason: string }
   ) {
     return this.applications.transition(id, { ...body, actorId: user.sub });
   }

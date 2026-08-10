@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @anagu/shared && npm run build -w @anagu/contracts && npm run build -w @anagu/api && npm run build -w @anagu/web",
+    "build": "npm run build -w @anagu/shared && npm run build -w @anagu/contracts && npm run build -w @anagu/api && npm run build -w @anagu/web && npm run typecheck -w @anagu/mobile",
     "test": "npm run test -w @anagu/contracts && npm run test -w @anagu/api",
     "dev:api": "npm run start:dev -w @anagu/api",
     "dev:web": "npm run dev -w @anagu/web",

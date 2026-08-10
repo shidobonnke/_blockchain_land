@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { ApplicationStatus, ParcelStatus, Role } from "@prisma/client";
 import { PrismaService } from "../common/prisma.service";
-import { canTransition } from "./workflow";
+import { canTransition, tenureAllowsReviewRoute } from "./workflow";
 import { BlockchainService } from "../blockchain/blockchain.service";
 import { EventPublisher } from "../events/event.publisher";
 import { createHash } from "crypto";
@@ -58,6 +58,21 @@ export class ApplicationsService {
       throw new ForbiddenException(
         `Role ${actor.role} cannot move ${application.status} to ${input.to}`
       );
+    if (
+      application.status === "DRAFT" &&
+      input.to === "SUBMITTED" &&
+      actor.role === Role.CITIZEN &&
+      application.applicantId !== actor.id
+    )
+      throw new ForbiddenException("Citizens can submit only their own applications");
+    if (application.status === "SPATIAL_REVIEW") {
+      if (!tenureAllowsReviewRoute(application.parcel.tenureType, input.to))
+        throw new BadRequestException(
+          application.parcel.tenureType === "CUSTOMARY"
+            ? "Customary claims require community review"
+            : "Statutory claims proceed directly to legal review"
+        );
+    }
     if (input.to === "COMMUNITY_REVIEW") await this.assertSpatiallyValid(application.parcelId);
     if (application.status === "COMMUNITY_REVIEW" && input.to === "LEGAL_REVIEW")
       await this.assertCommunityThreshold(application.id);
@@ -100,7 +115,10 @@ export class ApplicationsService {
       });
     }
 
-    const parcelStatus = parcelStatusFor[input.to];
+    const parcelStatus =
+      input.to === "LEGAL_REVIEW" && application.parcel.tenureType === "STATUTORY"
+        ? ParcelStatus.SPATIALLY_VERIFIED
+        : parcelStatusFor[input.to];
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.landApplication
         .update({
@@ -150,7 +168,9 @@ export class ApplicationsService {
   private async assertSpatiallyValid(parcelId: string) {
     const rows = await this.prisma.$queryRaw<Array<{ valid: boolean; overlaps: bigint }>>`
       SELECT ST_IsValid(p.geometry) valid,
-        (SELECT COUNT(*) FROM "LandParcel" o WHERE o.id <> p.id AND ST_Intersects(o.geometry, p.geometry)) overlaps
+        (SELECT COUNT(*) FROM "LandParcel" o WHERE o.id <> p.id
+          AND ST_Intersects(o.geometry, p.geometry)
+          AND NOT ST_Touches(o.geometry, p.geometry)) overlaps
       FROM "LandParcel" p WHERE p.id = ${parcelId}::uuid`;
     if (!rows[0]?.valid || rows[0].overlaps > BigInt(0))
       throw new BadRequestException("Spatial validation failed");
@@ -176,11 +196,18 @@ export class ApplicationsService {
       signature?: string;
     }
   ) {
-    const representative = await this.prisma.user.findUnique({
-      where: { id: input.representativeId }
-    });
+    const [representative, application] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: input.representativeId } }),
+      this.prisma.landApplication.findUnique({
+        where: { id },
+        include: { parcel: { select: { tenureType: true } } }
+      })
+    ]);
     if (!representative || representative.role !== Role.COMMUNITY_REPRESENTATIVE)
       throw new ForbiddenException("Only community representatives can attest");
+    if (!application) throw new NotFoundException("Application not found");
+    if (application.status !== "COMMUNITY_REVIEW" || application.parcel.tenureType !== "CUSTOMARY")
+      throw new BadRequestException("Attestations are accepted only during customary review");
     return this.prisma.attestation.upsert({
       where: {
         applicationId_representativeId: {

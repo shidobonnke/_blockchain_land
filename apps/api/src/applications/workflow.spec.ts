@@ -1,4 +1,4 @@
-import { canTransition } from "./workflow";
+import { canTransition, tenureAllowsReviewRoute } from "./workflow";
 
 describe("land application workflow", () => {
   it("allows only the surveyor to advance a spatial review", () => {
@@ -11,5 +11,13 @@ describe("land application workflow", () => {
   });
   it("does not permit transitions after minting", () => {
     expect(canTransition("MINTED", "REJECTED", "SYSTEM_ADMIN")).toBe(false);
+  });
+  it("requires community review for customary tenure", () => {
+    expect(tenureAllowsReviewRoute("CUSTOMARY", "LEGAL_REVIEW")).toBe(false);
+    expect(tenureAllowsReviewRoute("CUSTOMARY", "COMMUNITY_REVIEW")).toBe(true);
+  });
+  it("routes statutory tenure directly to legal review", () => {
+    expect(tenureAllowsReviewRoute("STATUTORY", "COMMUNITY_REVIEW")).toBe(false);
+    expect(tenureAllowsReviewRoute("STATUTORY", "LEGAL_REVIEW")).toBe(true);
   });
 });

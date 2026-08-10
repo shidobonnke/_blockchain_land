@@ -17,12 +17,14 @@ export async function syncOutbox(deviceId: string, userId: string, accessToken: 
         payload: JSON.parse(item.payload)
       })
     });
+    const responseBody = await response.json().catch(() => null);
+    const accepted = response.ok && responseBody?.result?.accepted !== false;
     if (response.ok) {
       markSynced(item.id);
     } else {
       markFailed(item.id);
     }
-    results.push({ id: item.id, ok: response.ok });
+    results.push({ id: item.id, ok: response.ok, accepted, reason: responseBody?.result?.reason });
   }
   return results;
 }

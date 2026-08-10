@@ -14,7 +14,8 @@ export class EvaluationService {
       failedTransactions,
       syncTotal,
       syncProcessed,
-      latency
+      latency,
+      spatialIntegrity
     ] = await Promise.all([
       this.prisma.landParcel.count(),
       this.prisma.landParcel.count({ where: { status: { in: ["ACTIVE", "TRANSFERRED"] } } }),
@@ -27,12 +28,25 @@ export class EvaluationService {
       this.prisma.evaluationMetric.aggregate({
         where: { metric: "VALIDATION_LATENCY" },
         _avg: { value: true }
-      })
+      }),
+      this.prisma.$queryRaw<Array<{ verified: bigint }>>`
+        SELECT COUNT(*) AS verified
+        FROM "LandParcel" p
+        WHERE p."geometryHash" IS NOT NULL
+          AND ST_IsValid(p.geometry)
+          AND NOT EXISTS (
+            SELECT 1 FROM "LandParcel" o
+            WHERE o.id <> p.id AND ST_Intersects(o.geometry, p.geometry)
+              AND NOT ST_Touches(o.geometry, p.geometry)
+          )`
     ]);
     const transactions = confirmedTransactions + failedTransactions;
     return {
       dataSecurity: {
-        integrityVerificationRate: totalParcels ? activeParcels / totalParcels : 1,
+        integrityVerificationRate: totalParcels
+          ? Number(spatialIntegrity[0]?.verified ?? 0) / totalParcels
+          : 1,
+        activeParcelRate: totalParcels ? activeParcels / totalParcels : 0,
         confirmedBlockchainTransactions: confirmedTransactions,
         failedBlockchainTransactions: failedTransactions
       },

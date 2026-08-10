@@ -8,6 +8,10 @@ land-title tokens, and offline field-data capture.
 The project implements the architecture and workflows described in Chapters 1 and
 3 of the accompanying research document.
 
+See the [objectives and methodology completion audit](docs/objectives-methodology-audit.md)
+for the objective-by-objective evidence, required Chapter 4 experiments, and
+contradictions that must be corrected in the dissertation text.
+
 > **Project status:** research and evaluation prototype. The application is suitable
 > for development, demonstration, controlled testing, and dissertation evaluation.
 > It is not a legally authoritative land registry until the production requirements
@@ -232,12 +236,22 @@ the development computer's LAN address instead.
 
 ## Database setup
 
-### 1. Start PostgreSQL
+### 1. Start PostgreSQL with PostGIS
 
-If PostgreSQL was installed with Homebrew:
+The recommended development database is the Compose service. It includes PostGIS
+and uses the passwordless local-development account `apple`. On Apple Silicon,
+Compose runs the official AMD64 PostGIS image through Docker Desktop emulation:
 
 ```bash
-brew services start postgresql@17
+brew services stop postgresql@15
+docker compose up -d postgres
+```
+
+Before starting it, ensure another Docker container is not already publishing port
+`5432`:
+
+```bash
+docker ps --format "table {{.Names}}\t{{.Ports}}"
 ```
 
 Confirm that the server is accepting connections:
@@ -246,39 +260,31 @@ Confirm that the server is accepting connections:
 pg_isready -h localhost -p 5432 -U apple
 ```
 
-### 2. Create the database
+### 2. Verify PostGIS
 
 ```bash
-createdb -U apple anagu
-```
-
-If it already exists, PostgreSQL will report that fact and no recreation is needed.
-
-### 3. Enable PostGIS
-
-```bash
-psql -U apple -d anagu -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+psql -h localhost -U apple -d anagu \
+  -c "SELECT current_user, public.PostGIS_Version();"
 ```
 
 PostGIS is required because `LandParcel.geometry` uses
-`geometry(Polygon, 4326)`.
+`geometry(Polygon, 4326)`. The initial Prisma migration also enables the
+extension automatically. Do not run `createdb`: the Compose service creates the
+`anagu` database during initialization.
 
-### 4. Generate the Prisma client
+### 3. Generate the Prisma client
 
 ```bash
 npm run db:generate
 ```
 
-### 5. Apply the schema
+### 4. Apply the schema
 
 For development:
 
 ```bash
 npm run db:migrate
 ```
-
-Choose a descriptive migration name such as `initial_land_registry` when Prisma
-prompts for one.
 
 Prisma does not provide complete first-class PostGIS query support. The schema
 therefore declares geometry as `Unsupported("geometry(Polygon, 4326)")`, while
@@ -293,21 +299,32 @@ npm install
 npm run db:generate
 ```
 
-To start Redis, MQTT, MinIO, and the local Besu node:
+To start all local infrastructure:
 
 ```bash
-docker compose up -d redis mqtt minio besu
+docker compose up -d postgres redis mqtt minio besu
 ```
 
-The Compose file also contains a PostGIS service using Docker credentials. Do not
-start the Docker `postgres` service if your passwordless local PostgreSQL server is
-already using port `5432`.
+The Docker PostgreSQL service and a local Homebrew PostgreSQL server cannot both
+bind host port `5432`; use only one at a time.
 
 Inspect service state:
 
 ```bash
 docker compose ps
 ```
+
+Development service addresses:
+
+| Service        | Address                  |
+| -------------- | ------------------------ |
+| PostgreSQL     | `localhost:5432`         |
+| Redis          | `localhost:6379`         |
+| MQTT           | `localhost:1883`         |
+| EMQX dashboard | `http://localhost:18083` |
+| MinIO API      | `http://localhost:9000`  |
+| MinIO console  | `http://localhost:9001`  |
+| Besu JSON-RPC  | `http://localhost:8545`  |
 
 Stop the infrastructure:
 
@@ -526,24 +543,54 @@ Before production:
 
 ### PostgreSQL reports “no response”
 
-Start PostgreSQL and verify port `5432`:
+Start the Compose database and verify port `5432`:
 
 ```bash
-brew services start postgresql@17
+docker compose up -d postgres
 pg_isready -h localhost -p 5432 -U apple
 ```
 
 ### Database `anagu` does not exist
 
+The Compose database creates it automatically. Confirm that the correct container
+is running:
+
 ```bash
-createdb -U apple anagu
+docker compose ps postgres
 ```
 
 ### PostGIS type does not exist
 
+The PostgreSQL server does not have PostGIS installed. Use the included PostGIS
+container:
+
 ```bash
-psql -U apple -d anagu -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+brew services stop postgresql@15
+docker compose up -d postgres
+psql -h localhost -U apple -d anagu \
+  -c "SELECT public.PostGIS_Version();"
 ```
+
+The `public.` qualification is intentional because some PostgreSQL installations
+use a customized schema search path.
+
+### PostgreSQL reports `role "apple" does not exist`
+
+This normally means another PostgreSQL container owns port `5432`. Find it:
+
+```bash
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
+lsof -nP -iTCP:5432 -sTCP:LISTEN
+```
+
+Stop only the conflicting container, then start Anagu PostgreSQL:
+
+```bash
+docker stop <conflicting-container-name>
+docker compose up -d postgres
+```
+
+Do not remove its volume unless its data is disposable.
 
 ### Prisma cannot connect
 
@@ -562,12 +609,45 @@ npm run db:migrate
 
 ### Docker PostgreSQL conflicts with local PostgreSQL
 
-Both attempt to bind port `5432`. Use only one database instance. For the current
-configuration, use the local PostgreSQL account `apple` and start only:
+Both attempt to bind port `5432`. Use only one database instance. To use the
+recommended Compose database:
 
 ```bash
-docker compose up -d redis mqtt minio besu
+brew services stop postgresql@15
+docker compose up -d postgres
 ```
+
+### Docker reports a missing manifest on Apple Silicon
+
+The Compose file pins the official PostGIS image to `platform: linux/amd64`.
+Docker Desktop must have x86/AMD64 emulation enabled. Pull it explicitly if
+necessary:
+
+```bash
+docker pull --platform linux/amd64 postgis/postgis:17-3.5
+docker compose up -d postgres
+```
+
+### Docker Hub reports a TLS handshake or context deadline timeout
+
+This is a registry/network timeout rather than a Compose configuration error.
+Restart Docker Desktop if needed, then retry; downloaded layers are reused:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+### Web frontend cannot bind port `3000`
+
+Check for another process using the port:
+
+```bash
+lsof -nP -iTCP:3000 -sTCP:LISTEN
+```
+
+After freeing the port, run `npm run dev:web` and open
+`http://localhost:3000`.
 
 ### A physical mobile device cannot reach the API
 

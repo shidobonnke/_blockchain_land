@@ -39,8 +39,9 @@ export default function Sync() {
         (await Application.getIosIdForVendorAsync()) ??
         "anagu-field-device";
       const results = await syncOutbox(deviceId, session.user.id, session.accessToken);
-      const success = results.filter((item) => item.ok).length;
-      setMessage(`${success} of ${results.length} queued operations acknowledged.`);
+      const processed = results.filter((item) => item.ok).length;
+      const accepted = results.filter((item) => item.accepted).length;
+      setMessage(`${processed} processed; ${accepted} accepted into the registry.`);
       refresh();
     } catch (reason) {
       setMessage(

@@ -13,12 +13,12 @@ Status definitions:
 
 ## Chapter 1 objectives
 
-| Requirement                                                     | Implementation evidence                                                                                           | Status                                                  |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Integrated GIS, NFT, MQTT and social-oracle architecture        | PostGIS parcel service, Solidity registry/NFT, MQTT event publisher, mobile SQLite outbox, community attestations | Implemented and verified                                |
-| Prototype explicitly aligned with the Land Use Act              | Role workflow and multi-layer Section 28 revocation path                                                          | Implemented; Nigerian legal validation required         |
-| Evaluate data security, fraud reduction and network performance | Evaluation data model, metrics API, reporting view and `npm run evaluate` runner                                  | Implemented; experiments required                       |
-| Compare with conventional/partially digitised registry          | Evaluation protocol supports measurements                                                                         | External baseline data and executed comparison required |
+| Requirement                                                     | Implementation evidence                                                                                                                      | Status                                                  |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Integrated GIS, NFT, MQTT and social-oracle architecture        | PostGIS parcel service, Solidity registry/NFT, MQTT event publisher, mobile SQLite outbox with server-side execution, community attestations | Implemented and verified                                |
+| Prototype explicitly aligned with the Land Use Act              | Role workflow and multi-layer Section 28 revocation path                                                                                     | Implemented; Nigerian legal validation required         |
+| Evaluate data security, fraud reduction and network performance | Evaluation data model, metrics API, reporting view and `npm run evaluate` runner                                                             | Implemented; experiments required                       |
+| Compare with conventional/partially digitised registry          | Evaluation protocol supports measurements                                                                                                    | External baseline data and executed comparison required |
 
 ## Use-case diagram
 
@@ -37,18 +37,18 @@ Status definitions:
 
 ## Activity and sequence diagrams
 
-| Required interaction            | Evidence                                       | Status                                              |
-| ------------------------------- | ---------------------------------------------- | --------------------------------------------------- |
-| Offline application capture     | Mobile SQLite outbox                           | Implemented and TypeScript verified                 |
-| Later synchronization           | Idempotent `/sync/operations` intake           | Implemented                                         |
-| GIS spatial validation          | `ST_IsValid` and overlap query                 | Implemented                                         |
-| Failed overlap stops processing | Parcel rejection and prevention metric         | Implemented                                         |
-| Social-oracle validation        | Unique representative votes and threshold gate | Implemented                                         |
-| Legal and registrar approvals   | Role-constrained state machine                 | Implemented                                         |
-| Smart-contract invocation       | NestJS blockchain orchestration service        | Implemented; deployed addresses and signer required |
-| NFT minting to owner wallet     | Restricted ERC-721 issuance                    | Implemented and contract tested                     |
-| Blockchain transaction recorded | `BlockchainTransaction` and `LandTitle`        | Implemented                                         |
-| MQTT event delivery             | QoS 1 user event publisher                     | Implemented; broker validation required             |
+| Required interaction            | Evidence                                                                                 | Status                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Offline application capture     | Mobile SQLite outbox                                                                     | Implemented and TypeScript verified                   |
+| Later synchronization           | Idempotent `/sync/operations` intake atomically creates the parcel and draft application | Implemented; disconnect/reconnect experiment required |
+| GIS spatial validation          | `ST_IsValid` and overlap query                                                           | Implemented                                           |
+| Failed overlap stops processing | Parcel rejection and prevention metric                                                   | Implemented                                           |
+| Social-oracle validation        | Unique representative votes and threshold gate                                           | Implemented                                           |
+| Legal and registrar approvals   | Role-constrained state machine                                                           | Implemented                                           |
+| Smart-contract invocation       | NestJS blockchain orchestration service                                                  | Implemented; deployed addresses and signer required   |
+| NFT minting to owner wallet     | Restricted ERC-721 issuance                                                              | Implemented and contract tested                       |
+| Blockchain transaction recorded | `BlockchainTransaction` and `LandTitle`                                                  | Implemented                                           |
+| MQTT event delivery             | QoS 1 user event publisher                                                               | Implemented; broker validation required               |
 
 ## State diagram
 
@@ -111,7 +111,7 @@ Besu consensus plugin.
 | Throughput                     | `scripts/evaluate.mjs`                          | Run at defined concurrency/load                                    |
 | Validation latency             | Blockchain service metric and runner            | Execute against configured network                                 |
 | Energy per transaction         | No fabricated value                             | Measure validator host energy and divide by confirmed transactions |
-| Data integrity rate            | Evaluation dashboard                            | Run tamper corpus                                                  |
+| Data integrity rate            | Valid, hashed, non-conflicting parcel query     | Run tamper corpus                                                  |
 | Availability                   | Evaluation runner success rate                  | Run sustained monitoring period                                    |
 | Security incidents detected    | Fraud-prevention events and failed transactions | Execute attack test set                                            |
 | Multiple-allocation prevention | PostGIS rejection metric                        | Execute controlled conflicting parcels                             |

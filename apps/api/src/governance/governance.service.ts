@@ -18,12 +18,27 @@ export class GovernanceService {
     newOwnerId: string;
     newOwnerWallet: string;
   }) {
-    const parcel = await this.prisma.landParcel.findUnique({
-      where: { id: input.parcelId },
-      include: { title: true }
-    });
+    const [parcel, requester, newOwner, pendingTransfer] = await Promise.all([
+      this.prisma.landParcel.findUnique({
+        where: { id: input.parcelId },
+        include: { title: true }
+      }),
+      this.prisma.user.findUnique({ where: { id: input.requestedById } }),
+      this.prisma.user.findUnique({ where: { id: input.newOwnerId } }),
+      this.prisma.transferRequest.count({
+        where: { parcelId: input.parcelId, status: { in: ["PENDING", "LEGAL_APPROVED"] } }
+      })
+    ]);
     if (!parcel?.title || !["ACTIVE", "TRANSFERRED"].includes(parcel.status))
       throw new BadRequestException("Parcel has no transferable active title");
+    if (
+      !requester?.walletAddress ||
+      requester.walletAddress.toLowerCase() !== parcel.title.ownerWallet.toLowerCase()
+    )
+      throw new BadRequestException("Only the registered title owner can request a transfer");
+    if (!newOwner || newOwner.walletAddress?.toLowerCase() !== input.newOwnerWallet.toLowerCase())
+      throw new BadRequestException("New-owner identity and wallet do not match");
+    if (pendingTransfer) throw new BadRequestException("A transfer request is already pending");
     const openDispute = await this.prisma.dispute.count({
       where: { parcelId: input.parcelId, status: "OPEN" }
     });
@@ -37,6 +52,8 @@ export class GovernanceService {
       include: { parcel: true }
     });
     if (!request) throw new NotFoundException("Transfer request not found");
+    if (request.status === "COMPLETED")
+      throw new BadRequestException("Transfer request is already complete");
     if (stage === "LEGAL")
       return this.prisma.transferRequest.update({
         where: { id },
@@ -75,6 +92,13 @@ export class GovernanceService {
   }
 
   async openDispute(input: { parcelId: string; raisedById: string; summary: string }) {
+    const parcel = await this.prisma.landParcel.findUnique({ where: { id: input.parcelId } });
+    if (!parcel || !["ACTIVE", "TRANSFERRED"].includes(parcel.status))
+      throw new BadRequestException("Only an active title can be disputed");
+    const existing = await this.prisma.dispute.count({
+      where: { parcelId: input.parcelId, status: "OPEN" }
+    });
+    if (existing) throw new BadRequestException("An open dispute already exists");
     const dispute = await this.prisma.dispute.create({ data: input, include: { parcel: true } });
     await this.blockchain.setDisputed(dispute.id, dispute.parcel.parcelCode, true, input.summary);
     await this.prisma.landParcel.update({
@@ -90,6 +114,7 @@ export class GovernanceService {
       include: { parcel: true }
     });
     if (!dispute) throw new NotFoundException("Dispute not found");
+    if (dispute.status !== "OPEN") throw new BadRequestException("Dispute is already resolved");
     await this.blockchain.setDisputed(id, dispute.parcel.parcelCode, false, resolution);
     return this.prisma.$transaction(async (tx) => {
       const result = await tx.dispute.update({

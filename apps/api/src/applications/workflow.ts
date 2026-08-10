@@ -1,4 +1,4 @@
-import { ApplicationStatus, Role } from "@prisma/client";
+import { ApplicationStatus, Role, TenureType } from "@prisma/client";
 
 type Rule = { to: ApplicationStatus; roles: Role[] };
 export const workflow: Record<ApplicationStatus, Rule[]> = {
@@ -32,4 +32,10 @@ export const workflow: Record<ApplicationStatus, Rule[]> = {
 
 export function canTransition(from: ApplicationStatus, to: ApplicationStatus, role: Role) {
   return workflow[from].some((rule) => rule.to === to && rule.roles.includes(role));
+}
+
+export function tenureAllowsReviewRoute(tenure: TenureType, to: ApplicationStatus) {
+  if (tenure === "CUSTOMARY" && to === "LEGAL_REVIEW") return false;
+  if (tenure === "STATUTORY" && to === "COMMUNITY_REVIEW") return false;
+  return true;
 }

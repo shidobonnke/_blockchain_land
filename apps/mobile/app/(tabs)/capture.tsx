@@ -8,6 +8,9 @@ import { colors } from "../../src/theme";
 export default function Capture() {
   const [parcelCode, setParcelCode] = useState("");
   const [address, setAddress] = useState("");
+  const [state, setState] = useState("");
+  const [lga, setLga] = useState("");
+  const [tenureType, setTenureType] = useState<"STATUTORY" | "CUSTOMARY">("CUSTOMARY");
   const [claim, setClaim] = useState("");
   const [points, setPoints] = useState<[number, number][]>([]);
   const [status, setStatus] = useState("Boundary capture has not started.");
@@ -44,8 +47,14 @@ export default function Capture() {
   }
 
   function save() {
-    if (!parcelCode.trim() || !address.trim() || claim.trim().length < 10) {
-      setStatus("Parcel code, address and claim description are required.");
+    if (
+      !parcelCode.trim() ||
+      !state.trim() ||
+      !lga.trim() ||
+      !address.trim() ||
+      claim.trim().length < 10
+    ) {
+      setStatus("Parcel code, state, LGA, address and claim description are required.");
       return;
     }
     if (points.length < 3) {
@@ -55,7 +64,10 @@ export default function Capture() {
     initialiseOfflineStore();
     enqueue("CREATE_FIELD_APPLICATION", {
       parcelCode,
+      state,
+      lga,
       address,
+      tenureType,
       claimDescription: claim,
       geometry: {
         type: "Polygon",
@@ -65,6 +77,8 @@ export default function Capture() {
     });
     setParcelCode("");
     setAddress("");
+    setState("");
+    setLga("");
     setClaim("");
     setPoints([]);
     setStatus("Record encrypted locally and added to the synchronization outbox.");
@@ -89,12 +103,31 @@ export default function Capture() {
             placeholder="AN-LA-001"
             autoCapitalize="characters"
           />
+          <Field label="State" value={state} onChangeText={setState} placeholder="Enugu" />
+          <Field
+            label="Local government area"
+            value={lga}
+            onChangeText={setLga}
+            placeholder="Nsukka"
+          />
           <Field
             label="Location or address"
             value={address}
             onChangeText={setAddress}
             placeholder="Village, ward, LGA and state"
           />
+          <Text style={sharedStyles.body}>Tenure type</Text>
+          <View style={styles.tenureRow}>
+            {(["CUSTOMARY", "STATUTORY"] as const).map((value) => (
+              <TouchableOpacity
+                key={value}
+                style={[styles.tenureOption, tenureType === value && styles.tenureSelected]}
+                onPress={() => setTenureType(value)}
+              >
+                <Text style={styles.checkText}>{value}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           <Field
             label="Basis of ownership"
             value={claim}
@@ -160,6 +193,9 @@ export default function Capture() {
 }
 
 const styles = StyleSheet.create({
+  tenureRow: { flexDirection: "row", gap: 8 },
+  tenureOption: { padding: 10, borderRadius: 8, backgroundColor: colors.green100 },
+  tenureSelected: { borderWidth: 2, borderColor: colors.green700 },
   textarea: { minHeight: 100, paddingTop: 13, textAlignVertical: "top" },
   counter: {
     paddingHorizontal: 9,
