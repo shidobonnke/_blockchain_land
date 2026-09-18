@@ -72,7 +72,7 @@ export class ParcelsService {
       SELECT id, "parcelCode", state, lga, address, "tenureType", status,
         "areaSqM", "geometryHash", ST_AsGeoJSON(geometry)::json AS geometry,
         "createdAt", "updatedAt"
-      FROM "LandParcel" WHERE id = ${id}::uuid`;
+      FROM "LandParcel" WHERE id = ${id}`;
     if (!rows.length) throw new NotFoundException("Parcel not found");
     return rows[0];
   }
@@ -85,7 +85,7 @@ export class ParcelsService {
         (SELECT COUNT(*) FROM "LandParcel" o
          WHERE o.id <> p.id AND ST_Intersects(o.geometry, p.geometry)
            AND NOT ST_Touches(o.geometry, p.geometry)) AS overlaps
-      FROM "LandParcel" p WHERE p.id = ${id}::uuid`;
+      FROM "LandParcel" p WHERE p.id = ${id}`;
     if (!rows.length) throw new NotFoundException("Parcel not found");
     return {
       ...rows[0],

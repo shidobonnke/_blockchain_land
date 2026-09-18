@@ -14,3 +14,7 @@ typechain-types
 *.log
 .DS_Store
 ~$*.docx
+results
+Anagu_Complete_Build_and_Test_Guide.pdf
+window.md
+setup.md

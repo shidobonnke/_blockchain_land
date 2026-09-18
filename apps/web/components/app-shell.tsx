@@ -11,6 +11,8 @@ import {
   Map,
   Menu,
   ShieldCheck,
+  Users,
+  UserCog,
   WalletCards,
   X
 } from "lucide-react";
@@ -21,6 +23,7 @@ import { useAuth } from "./auth-provider";
 
 const navigation = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/profile", label: "My wallet", icon: UserCog },
   { href: "/applications", label: "Applications", icon: FileCheck2 },
   { href: "/applications/new", label: "New application", icon: FilePlus2 },
   { href: "/parcels", label: "Land parcels", icon: Map },
@@ -62,7 +65,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav className="nav" aria-label="Primary navigation">
-          {navigation.map(({ href, label, icon: Icon }) => (
+          {[
+            ...navigation,
+            ...(session?.user.role === "SYSTEM_ADMIN"
+              ? [{ href: "/admin/users", label: "User management", icon: Users }]
+              : [])
+          ].map(({ href, label, icon: Icon }) => (
             <Link
               href={href}
               key={href}

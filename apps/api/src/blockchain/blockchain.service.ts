@@ -78,9 +78,10 @@ export class BlockchainService {
     entityType: string,
     entityId: string,
     operation: string,
-    send: (
-      contract: Contract
-    ) => Promise<{ hash: string; wait(): Promise<{ blockNumber: number } | null> }>
+    send: (contract: Contract) => Promise<{
+      hash: string;
+      wait(): Promise<{ blockNumber: number; gasUsed?: bigint } | null>;
+    }>
   ) {
     const record = await this.prisma.blockchainTransaction.create({
       data: { entityType, entityId, operation }
@@ -94,7 +95,7 @@ export class BlockchainService {
       });
       const receipt = await tx.wait();
       const latency = performance.now() - started;
-      await this.prisma.$transaction([
+      const metrics = [
         this.prisma.blockchainTransaction.update({
           where: { id: record.id },
           data: { status: "CONFIRMED", blockNumber: receipt?.blockNumber, confirmedAt: new Date() }
@@ -108,7 +109,20 @@ export class BlockchainService {
             context: { operation }
           }
         })
-      ]);
+      ];
+      if (receipt?.gasUsed !== undefined)
+        metrics.push(
+          this.prisma.evaluationMetric.create({
+            data: {
+              category: "PERFORMANCE",
+              metric: "TRANSACTION_GAS_USED",
+              value: Number(receipt.gasUsed),
+              unit: "gas",
+              context: { operation }
+            }
+          })
+        );
+      await this.prisma.$transaction(metrics);
       return { transactionHash: tx.hash, blockNumber: receipt?.blockNumber };
     } catch (error) {
       await this.prisma.blockchainTransaction.update({

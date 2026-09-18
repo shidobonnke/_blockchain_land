@@ -12,6 +12,7 @@ import { RolesGuard } from "./auth/roles.guard";
 import { GovernanceModule } from "./governance/governance.module";
 import { EvaluationModule } from "./evaluation/evaluation.module";
 import { DocumentsModule } from "./documents/documents.module";
+import { SystemAdminBootstrap } from "./auth/system-admin.bootstrap";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { DocumentsModule } from "./documents/documents.module";
   ],
   controllers: [HealthController],
   providers: [
+    SystemAdminBootstrap,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard }
   ]

@@ -18,6 +18,10 @@
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
     "evaluate": "node scripts/evaluate.mjs",
+    "evaluate:30": "EVALUATION_SAMPLES=30 node scripts/evaluate.mjs",
+    "evaluate:guide": "EVALUATION_SAMPLES=30 node scripts/evaluate-guide.mjs",
+    "evaluate:csv": "node scripts/export-results-csv.mjs",
+    "evaluate:pdf": "node scripts/export-report-pdf.mjs",
     "format": "prettier --write \"apps/**/*.{ts,tsx,js,json}\" \"packages/**/*.{ts,tsx,js,json}\" \"scripts/**/*.{js,mjs}\" \"*.{json,md,yml}\" \"docs/**/*.md\"",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,json}\" \"packages/**/*.{ts,tsx,js,json}\" \"scripts/**/*.{js,mjs}\" \"*.{json,md,yml}\" \"docs/**/*.md\""
   },

@@ -171,7 +171,7 @@ export class ApplicationsService {
         (SELECT COUNT(*) FROM "LandParcel" o WHERE o.id <> p.id
           AND ST_Intersects(o.geometry, p.geometry)
           AND NOT ST_Touches(o.geometry, p.geometry)) overlaps
-      FROM "LandParcel" p WHERE p.id = ${parcelId}::uuid`;
+      FROM "LandParcel" p WHERE p.id = ${parcelId}`;
     if (!rows[0]?.valid || rows[0].overlaps > BigInt(0))
       throw new BadRequestException("Spatial validation failed");
   }

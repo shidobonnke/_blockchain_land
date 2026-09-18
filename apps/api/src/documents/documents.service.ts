@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as Minio from "minio";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { PrismaService } from "../common/prisma.service";
 
 @Injectable()
@@ -29,10 +29,38 @@ export class DocumentsService {
     const url = await this.client.presignedPutObject(this.bucket, storageKey, 900);
     return { storageKey, uploadUrl: url, expiresInSeconds: 900 };
   }
-  confirm(
+  async confirm(
     applicationId: string,
     input: { storageKey: string; category: string; contentHash: string; mimeType: string }
   ) {
+    if (!input.storageKey.startsWith(`applications/${applicationId}/`))
+      throw new BadRequestException("Document storage key does not belong to this application");
+    const application = await this.prisma.landApplication.findUnique({
+      where: { id: applicationId },
+      select: { id: true }
+    });
+    if (!application) throw new NotFoundException("Application not found");
+    let actualHash: string;
+    try {
+      const stream = await this.client.getObject(this.bucket, input.storageKey);
+      const hash = createHash("sha256");
+      for await (const chunk of stream) hash.update(chunk);
+      actualHash = hash.digest("hex");
+    } catch {
+      throw new BadRequestException("Uploaded document could not be read from object storage");
+    }
+    if (actualHash.toLowerCase() !== input.contentHash.toLowerCase()) {
+      await this.prisma.evaluationMetric.create({
+        data: {
+          category: "FRAUD_REDUCTION",
+          metric: "DOCUMENT_TAMPERING_DETECTED",
+          value: 1,
+          unit: "attempt",
+          context: { applicationId, storageKey: input.storageKey }
+        }
+      });
+      throw new BadRequestException("Document content hash does not match the uploaded object");
+    }
     return this.prisma.document.create({ data: { applicationId, ...input } });
   }
   async download(id: string) {

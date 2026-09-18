@@ -96,4 +96,36 @@ describe("LandRegistry", function () {
       "Validator already voted"
     );
   });
+
+  it("rejects a revocation request from a non-Governor address", async () => {
+    const { owner, registry } = await fixture();
+    const parcel = ethers.id("AN-LA-005");
+    await registry.issueTitle(parcel, ethers.id("geometry"), ethers.id("metadata"), owner.address);
+    await expect(registry.connect(owner).requestRevocation(parcel, ethers.id("public-interest"))).to
+      .be.reverted;
+  });
+
+  it("rejects transfer attempts after a title is revoked", async () => {
+    const {
+      owner,
+      buyer,
+      governor,
+      judiciary,
+      validator1,
+      validator2,
+      validator3,
+      validator4,
+      token,
+      registry
+    } = await fixture();
+    const parcel = ethers.id("AN-LA-006");
+    await registry.issueTitle(parcel, ethers.id("geometry"), ethers.id("metadata"), owner.address);
+    await registry.connect(governor).requestRevocation(parcel, ethers.id("public-interest"));
+    for (const validator of [validator1, validator2, validator3, validator4])
+      await registry.connect(validator).voteRevocation(parcel);
+    await registry.connect(judiciary).approveRevocation(parcel);
+    await registry.executeRevocation(parcel);
+    await expect(registry.transferTitle(parcel, buyer.address)).to.be.revertedWith("Title locked");
+    await expect(token.connect(owner).transferFrom(owner.address, buyer.address, 1)).to.be.reverted;
+  });
 });
