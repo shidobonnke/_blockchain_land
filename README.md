@@ -31,6 +31,7 @@ contradictions that must be corrected in the dissertation text.
 - [Smart-contract deployment](#smart-contract-deployment)
 - [API documentation](#api-documentation)
 - [Testing and verification](#testing-and-verification)
+- [Evaluation results](#evaluation-results)
 - [Offline synchronization](#offline-synchronization)
 - [Security model](#security-model)
 - [Troubleshooting](#troubleshooting)
@@ -61,6 +62,8 @@ Anagu uses two client applications and one authoritative backend:
 
 Web and mobile clients do not communicate directly with PostGIS, document storage,
 or blockchain nodes. All validation and state changes pass through the NestJS API.
+Blockchain writes are delegated from NestJS to the Python gateway in `api/`,
+which uses `purechainlib` for PureChain contract execution.
 
 ### Main capabilities
 
@@ -131,6 +134,9 @@ anagu/
 ├── .env.example
 └── package.json
 ```
+
+The repository-level `api/` directory contains the PureChain gateway and its
+Python dependency declaration.
 
 This is an npm-workspaces monorepo. Install dependencies once from the repository
 root.
@@ -492,6 +498,35 @@ npm audit
 
 Some advisories can originate in Expo/React Native development tooling and may
 require a coordinated Expo SDK upgrade rather than an automatic forced update.
+
+## Evaluation results
+
+Generate the sample-style test and report bundle with:
+
+```bash
+npm run evaluate:all
+```
+
+This writes the timestamped artifacts to `results/`:
+
+- `guide-evaluation-30-*.json` — raw measurements and metadata
+- `guide-evaluation-30-*.md` — formatted report with evidence labels
+- `guide-evaluation-30-*-summary.csv` — summary metrics
+- `guide-evaluation-30-*-trials.csv` — per-trial observations
+- `guide-evaluation-30-*.html` and `.pdf` — report exports
+
+The guide report distinguishes measured results, controlled simulations, proxy
+measurements, and gaps that still require field or baseline evidence. Configure
+the API credentials and running services before executing it:
+
+```bash
+EVALUATION_EMAIL=admin@example.com \
+EVALUATION_PASSWORD=... \
+npm run evaluate:all
+```
+
+Use `EVALUATION_SAMPLES` to change the trial count. Results are timestamped and
+are never overwritten.
 
 ## Offline synchronization
 

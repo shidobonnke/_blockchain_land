@@ -1,4 +1,16 @@
 services:
+  purechain-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      PURECHAIN_NETWORK: ${PURECHAIN_NETWORK:-testnet}
+      PURECHAIN_PRIVATE_KEY: ${PURECHAIN_PRIVATE_KEY:?Set PURECHAIN_PRIVATE_KEY}
+      LAND_REGISTRY_ADDRESS: ${LAND_REGISTRY_ADDRESS:?Set LAND_REGISTRY_ADDRESS}
+      PURECHAIN_API_HOST: 0.0.0.0
+      PURECHAIN_API_PORT: 8100
+    ports: ["8100:8100"]
+
   postgres:
     image: postgis/postgis:17-3.5
     platform: linux/amd64
