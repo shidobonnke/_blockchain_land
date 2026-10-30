@@ -1,6 +1,6 @@
-# Anagu Land Registry
+# Land Registry
 
-Anagu is a cross-platform land-administration system designed for Nigeria's
+Blockchain framework is a cross-platform land-administration system designed for Nigeria's
 statutory and customary tenure environment. It combines GIS parcel validation,
 community attestation, legally controlled approval workflows, restricted digital
 land-title tokens, and offline field-data capture.
@@ -39,7 +39,7 @@ contradictions that must be corrected in the dissertation text.
 
 ## System overview
 
-Anagu uses two client applications and one authoritative backend:
+The framework uses two client applications and one authoritative backend:
 
 ```text
 ┌────────────────────┐       ┌────────────────────┐
